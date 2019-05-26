@@ -1,0 +1,8 @@
+Cerebral server : 149.56.149.0:22      Administrator / ZXCasdqwe123
+Jump Host : 192.95.56.124			Administrator / bb5@G4.Li
+Xen Server : 192.99.232.14          root / bb5@G4.Li 
+https://firewall.verstand.in:8443/webui/startPage.do    :     root / bb5@G4.Li
+KEC :   Administrator / bb5@G4.Li@123
+Kubernetes  : 149.56.119.18    verstand / verstand
+
+W@webac9!  
