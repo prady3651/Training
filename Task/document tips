@@ -1,0 +1,5 @@
+Create VPC
+Create Internet gateway 
+Create NATing 
+Create Internal ELB
+Create Private EC2 servers
