@@ -1,0 +1,307 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  AWS CloudFormation Sample Template LAMP_Single_Instance: Create a LAMP stack
+  using a single EC2 instance. This template demonstrates used to  bootstrap
+  scripts to install the packages and files necessary to deploy the Apache web
+  server and welcome Page at instance launch time.
+Parameters:
+  KeyName:
+    Description: Name of an existing EC2 KeyPair used to connect Instance via SSH
+    Type: 'AWS::EC2::KeyPair::KeyName'
+    ConstraintDescription: Select the  existing EC2 KeyPair.
+  InstanceType:
+    Description: WebServer EC2 instance type
+    Type: String
+    Default: t2.small
+    AllowedValues:
+      - t1.micro
+      - t2.nano
+      - t2.micro
+      - t2.small
+      - t2.medium
+      - t2.large
+    ConstraintDescription: Select a valid EC2 instance type.
+  SSHLocation:
+    Description: ' Source IP address range that can be used to SSH to the Web instances'
+    Type: String
+    MinLength: '9'
+    MaxLength: '18'
+    Default: 0.0.0.0/0
+    AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
+    ConstraintDescription: Provide a valid IP CIDR range of the form x.x.x.x/x.
+Mappings:
+  AWSInstanceType2Arch:
+    t1.micro:
+      Arch: HVM64
+    t2.nano:
+      Arch: HVM64
+    t2.micro:
+      Arch: HVM64
+    t2.small:
+      Arch: HVM64
+    t2.medium:
+      Arch: HVM64
+    t2.large:
+      Arch: HVM64
+  AWSInstanceType2NATArch:
+    t1.micro:
+      Arch: NATHVM64
+    t2.nano:
+      Arch: NATHVM64
+    t2.micro:
+      Arch: NATHVM64
+    t2.small:
+      Arch: NATHVM64
+    t2.medium:
+      Arch: NATHVM64
+    t2.large:
+      Arch: NATHVM64
+  AWSRegionArch2AMI:
+    us-east-1:
+      HVM64: ami-0080e4c5bc078760e
+      HVMG2: ami-0aeb704d503081ea6
+    us-west-2:
+      HVM64: ami-01e24be29428c15b2
+      HVMG2: ami-0fe84a5b4563d8f27
+    us-west-1:
+      HVM64: ami-0ec6517f6edbf8044
+      HVMG2: ami-0a7fc72dc0e51aa77
+    us-east-2:
+      HVM64: ami-0cd3dfa4e37921605
+      HVMG2: NOT_SUPPORTED
+Resources:
+  WebServerInstance:
+    Type: 'AWS::EC2::Instance'
+    Metadata:
+      'AWS::CloudFormation::Init':
+        configSets:
+          InstallAndRun:
+            - Install
+            - Configure
+        Install:
+          packages:
+            yum:
+              httpd: []
+          files:
+            /var/www/html/index.html:
+              content: !Join 
+                - ''
+                - - |
+                    <html>
+                  - |2
+                      <head>
+                  - |2
+                        <title>AWS CloudFormation Web Node Sample</title>
+                  - |2
+                        <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+                  - |2
+                      </head>
+                  - |2
+                      <body>
+                  - |2
+                        <h1>Welcome to the AWS CloudFormation demo</h1>
+                  - |2
+                        <p/>
+                  - |2
+                        <?php
+                  - |2
+                          // Print out the current data and time
+                  - |2
+                          print "The Current Date and Time is: <br/>";
+                  - |2
+                          print date("g:i A l, F j Y.");
+                  - |2
+                        ?>
+                  - |2
+                        <p/>
+                  - |2
+                        <?php
+                  - |2
+                          // Setup a handle for CURL
+                  - |2
+                          $curl_handle=curl_init();
+                  - |2
+                          curl_setopt($curl_handle,CURLOPT_CONNECTTIMEOUT,2);
+                  - |2
+                          curl_setopt($curl_handle,CURLOPT_RETURNTRANSFER,1);
+                  - |2
+                          // Get the hostname of the intance from the instance metadata
+                  - |2
+                          curl_setopt($curl_handle,CURLOPT_URL,'http://169.254.169.254/latest/meta-data/public-hostname');
+                  - |2
+                          curl_setopt($curl_handle,CURLOPT_URL,'http://169.254.169.254/latest/meta-data/public-ipv4');
+                  - |2
+                          $hostname = curl_exec($curl_handle);
+                  - |2
+                          if (empty($hostname))
+                  - |2
+                          {
+                  - |2
+                            print "Sorry, for some reason, we got no hostname back <br />";
+                  - |2
+                          }
+                  - |2
+                          else
+                  - |2
+                          {
+                  - |2
+                            print "Server = " . $hostname . "<br />";
+                  - |2
+                          }
+                  - |2
+                          // Get the instance-id of the intance from the instance metadata
+                  - |2
+                          curl_setopt($curl_handle,CURLOPT_URL,'http://169.254.169.254/latest/meta-data/instance-id');
+                  - |2
+                          $instanceid = curl_exec($curl_handle);
+                  - |2
+                          if (empty($instanceid))
+                  - |2
+                          {
+                  - |2
+                            print "Sorry, for some reason, we got no instance id back <br />";
+                  - |2
+                          }
+                  - |2
+                          else
+                  - |2
+                          {
+                  - |2
+                            print "EC2 instance-id = " . $instanceid . "<br />";
+                  - |2
+                          }
+                  - |2
+                      </body>
+                  - |
+                    </html>
+              mode: '000600'
+              owner: apache
+              group: apache
+            /etc/cfn/cfn-hup.conf:
+              content: !Join 
+                - ''
+                - - |
+                    [main]
+                  - stack=
+                  - !Ref 'AWS::StackId'
+                  - |+
+
+                  - region=
+                  - !Ref 'AWS::Region'
+                  - |+
+
+              mode: '000400'
+              owner: root
+              group: root
+            /etc/cfn/hooks.d/cfn-auto-reloader.conf:
+              content: !Join 
+                - ''
+                - - |
+                    [cfn-auto-reloader-hook]
+                  - |
+                    triggers=post.update
+                  - >
+                    path=Resources.WebServerInstance.Metadata.AWS::CloudFormation::Init
+                  - 'action=/opt/aws/bin/cfn-init -v '
+                  - '         --stack '
+                  - !Ref 'AWS::StackName'
+                  - '         --resource WebServerInstance '
+                  - '         --configsets InstallAndRun '
+                  - '         --region '
+                  - !Ref 'AWS::Region'
+                  - |+
+
+                  - |
+                    runas=root
+              mode: '000400'
+              owner: root
+              group: root
+          services:
+            sysvinit:
+              httpd:
+                enabled: 'true'
+                ensureRunning: 'true'
+              cfn-hup:
+                enabled: 'true'
+                ensureRunning: 'true'
+                files:
+                  - /etc/cfn/cfn-hup.conf
+                  - /etc/cfn/hooks.d/cfn-auto-reloader.conf
+  'AWS::CloudFormation::Designer':
+    id: be956867-6ecd-4d81-8586-5a8ae0421c0b
+
+    
+    
+    
+    
+    
+Properties:
+  ImageId: !FindInMap 
+    - AWSRegionArch2AMI
+    - !Ref 'AWS::Region'
+    - !FindInMap 
+      - AWSInstanceType2Arch
+      - !Ref InstanceType
+      - Arch
+  InstanceType: !Ref InstanceType
+  SecurityGroups:
+    - !Ref WebServerSecurityGroup
+  KeyName: !Ref KeyName
+  UserData: !Base64 
+    'Fn::Join':
+      - ''
+      - - |
+          #!/bin/bash -xe
+        - |
+          yum update -y aws-cfn-bootstrap
+        - |
+          # Install the files and packages from the metadata
+        - '/opt/aws/bin/cfn-init -v '
+        - '         --stack '
+        - !Ref 'AWS::StackName'
+        - '         --resource WebServerInstance '
+        - '         --configsets InstallAndRun '
+        - '         --region '
+        - !Ref 'AWS::Region'
+        - |+
+
+        - |
+          # Signal the status from cfn-init
+        - '/opt/aws/bin/cfn-signal -e $? '
+        - '         --stack '
+        - !Ref 'AWS::StackName'
+        - '         --resource WebServerInstance '
+        - '         --region '
+        - !Ref 'AWS::Region'
+        - |+
+
+CreationPolicy:
+  ResourceSignal:
+    Timeout: PT5M
+WebServerSecurityGroup:
+  Type: 'AWS::EC2::SecurityGroup'
+  Properties:
+    GroupDescription: Enable HTTP access via port 80
+    SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: '80'
+        ToPort: '80'
+        CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: '22'
+        ToPort: '22'
+        CidrIp: !Ref SSHLocation
+  Metadata:
+    'AWS::CloudFormation::Designer':
+      id: 65676b30-7b8b-4bfe-8726-70132d203e5e
+Outputs:
+  WebsiteURL:
+    Description: URL for newly created LAMP stack
+    Value: !Join 
+      - ''
+      - - 'http://'
+        - !GetAtt 
+          - WebServerInstance
+          - PublicDnsName
+Metadata:
+  'AWS::CloudFormation::Designer': {}
