@@ -1,0 +1,297 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: '3 Web-node with Load-balanced with First generation ELB '
+Resources:
+  vpc50c27e28:
+    Type: 'AWS::EC2::VPC'
+    Properties:
+      CidrBlock: 172.31.0.0/16
+      InstanceTenancy: default
+      EnableDnsSupport: 'true'
+      EnableDnsHostnames: 'true'
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: fc1ba308-f444-4119-b97b-94e2453a978b
+  subnet10b1bf69:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      CidrBlock: 172.31.16.0/20
+      AvailabilityZone: us-west-2b
+      VpcId: !Ref vpc50c27e28
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: d0476ebd-6ced-459e-b741-95a211c9db05
+  subnet080a1252:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      CidrBlock: 172.31.0.0/20
+      AvailabilityZone: us-west-2c
+      VpcId: !Ref vpc50c27e28
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: e0f3626d-f0aa-4062-bc41-119dea3e166d
+  igw767b9d0f:
+    Type: 'AWS::EC2::InternetGateway'
+    Properties: {}
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: d898955e-51d9-4af5-a6a7-56fef331fccc
+  dopt86ba0ffe:
+    Type: 'AWS::EC2::DHCPOptions'
+    Properties:
+      DomainName: us-west-2.compute.internal
+      DomainNameServers:
+        - AmazonProvidedDNS
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 5553c8e9-f638-466c-a72c-44bfe9334fd2
+  acl79958101:
+    Type: 'AWS::EC2::NetworkAcl'
+    Properties:
+      VpcId: !Ref vpc50c27e28
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 92cdb65f-74f1-4d91-aa53-245291fa14c5
+  rtbe238a699:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref vpc50c27e28
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 19cd6a95-08c4-4036-bfd5-78092d2f20a3
+  elbWebELB:
+    Type: 'AWS::ElasticLoadBalancing::LoadBalancer'
+    Properties:
+      Subnets:
+        - subnet-57c3e81c
+        - !Ref subnet080a1252
+        - !Ref subnet10b1bf69
+      HealthCheck:
+        HealthyThreshold: '10'
+        Interval: '10'
+        Target: 'HTTP:80/heartbeat.html'
+        Timeout: '2'
+        UnhealthyThreshold: '2'
+      ConnectionDrainingPolicy:
+        Enabled: 'true'
+        Timeout: '300'
+      ConnectionSettings:
+        IdleTimeout: '60'
+      CrossZone: 'true'
+      Instances:
+        - !Ref instancei030f966de66e5ef56
+        - !Ref instancei0631e772bd5d09af9
+        - !Ref instancei072de2e61d14d296d
+      SecurityGroups:
+        - !Ref sgWebELB
+      Listeners:
+        - InstancePort: '80'
+          LoadBalancerPort: '80'
+          Protocol: HTTP
+          InstanceProtocol: HTTP
+      Tags:
+        - Key: Name
+          Value: ELBWebNode
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 0438fde2-f42c-49e5-bc9f-edfc33df5dc4
+  instancei0631e772bd5d09af9:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      DisableApiTermination: 'false'
+      InstanceInitiatedShutdownBehavior: stop
+      ImageId: ami-082b5a644766e0e6f
+      InstanceType: t2.micro
+      KeyName: DevOps_1
+      Monitoring: 'false'
+      Tags:
+        - Key: Name
+          Value: WebNode2
+      NetworkInterfaces:
+        - DeleteOnTermination: 'true'
+          DeviceIndex: 0
+          PrivateIpAddresses:
+            - PrivateIpAddress: 172.31.17.41
+              Primary: 'true'
+          GroupSet:
+            - !Ref sgWebNode
+          AssociatePublicIpAddress: 'false'
+        - SubnetId: !Ref subnet10b1bf69
+        - SubnetId: !Ref subnet10b1bf69
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: e0bcd08e-616d-4745-bb66-2400cca40130
+  instancei072de2e61d14d296d:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      DisableApiTermination: 'false'
+      InstanceInitiatedShutdownBehavior: stop
+      ImageId: ami-082b5a644766e0e6f
+      InstanceType: t2.micro
+      KeyName: DevOps_1
+      Monitoring: 'false'
+      Tags:
+        - Key: Name
+          Value: WebNode3
+      NetworkInterfaces:
+        - DeleteOnTermination: 'true'
+          Description: Primary network interface
+          DeviceIndex: 0
+          PrivateIpAddresses:
+            - PrivateIpAddress: 172.31.7.123
+              Primary: 'true'
+          GroupSet:
+            - !Ref sgWebNode
+          AssociatePublicIpAddress: 'false'
+        - SubnetId: !Ref subnet080a1252
+        - SubnetId: !Ref subnet080a1252
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 1710853e-1a9c-4d67-9e25-3cea53356a1e
+  instancei030f966de66e5ef56:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      DisableApiTermination: 'false'
+      InstanceInitiatedShutdownBehavior: stop
+      ImageId: ami-082b5a644766e0e6f
+      InstanceType: t2.micro
+      KeyName: DevOps_1
+      Monitoring: 'false'
+      Tags:
+        - Key: Name
+          Value: WebNode 1
+      NetworkInterfaces:
+        - DeleteOnTermination: 'true'
+          DeviceIndex: 0
+          PrivateIpAddresses:
+            - PrivateIpAddress: 172.31.17.205
+              Primary: 'true'
+          GroupSet:
+            - !Ref sgWebNode
+          AssociatePublicIpAddress: 'false'
+        - SubnetId: !Ref subnet10b1bf69
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 8136ac3d-8bde-488c-9e00-e75f25254c3b
+  sgWebNode:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: WebNode
+      VpcId: !Ref vpc50c27e28
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 70638bc6-399a-4361-965c-3a4e31b3bd9b
+  sgWebELB:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: WEBELB
+      VpcId: !Ref vpc50c27e28
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 3a96021f-9367-47b6-8593-ccc2a7afa411
+  acl3:
+    Type: 'AWS::EC2::NetworkAclEntry'
+    Properties:
+      CidrBlock: 0.0.0.0/0
+      Egress: 'true'
+      Protocol: '-1'
+      RuleAction: allow
+      RuleNumber: '100'
+      NetworkAclId: !Ref acl79958101
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 7fba1481-88a0-49c5-9b38-554b6fb39b76
+  acl4:
+    Type: 'AWS::EC2::NetworkAclEntry'
+    Properties:
+      CidrBlock: 0.0.0.0/0
+      Protocol: '-1'
+      RuleAction: allow
+      RuleNumber: '100'
+      NetworkAclId: !Ref acl79958101
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: cacb5d5e-4571-43a9-9d8e-421e85686fef
+  subnetacl5:
+    Type: 'AWS::EC2::SubnetNetworkAclAssociation'
+    Properties:
+      NetworkAclId: !Ref acl79958101
+      SubnetId: subnet-57c3e81c
+  subnetacl6:
+    Type: 'AWS::EC2::SubnetNetworkAclAssociation'
+    Properties:
+      NetworkAclId: !Ref acl79958101
+      SubnetId: !Ref subnet10b1bf69
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 31383245-5869-4fae-b62b-3a35929dad85
+  subnetacl7:
+    Type: 'AWS::EC2::SubnetNetworkAclAssociation'
+    Properties:
+      NetworkAclId: !Ref acl79958101
+      SubnetId: !Ref subnet080a1252
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 2ba515db-b689-46c1-b1b4-e3699dafc2cb
+  gw2:
+    Type: 'AWS::EC2::VPCGatewayAttachment'
+    Properties:
+      VpcId: !Ref vpc50c27e28
+      InternetGatewayId: !Ref igw767b9d0f
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: b1efa990-6039-4206-a010-474d26981715
+  route2:
+    Type: 'AWS::EC2::Route'
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      RouteTableId: !Ref rtbe238a699
+    DependsOn:
+      - gw2
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 80140c28-7049-4bef-94b1-c75d6e53d801
+  dchpassoc2:
+    Type: 'AWS::EC2::VPCDHCPOptionsAssociation'
+    Properties:
+      VpcId: !Ref vpc50c27e28
+      DhcpOptionsId: !Ref dopt86ba0ffe
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: a6de6cc7-cff8-49e0-89c1-d5227cb3af75
+  ingress3:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref sgWebNode
+      IpProtocol: tcp
+      FromPort: '80'
+      ToPort: '80'
+      CidrIp: 0.0.0.0/0
+  ingress5:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      GroupId: !Ref sgWebELB
+      IpProtocol: tcp
+      FromPort: '80'
+      ToPort: '80'
+      CidrIp: 0.0.0.0/0
+  egress2:
+    Type: 'AWS::EC2::SecurityGroupEgress'
+    Properties:
+      GroupId: !Ref sgWebNode
+      IpProtocol: '-1'
+      CidrIp: 0.0.0.0/0
+  egress3:
+    Type: 'AWS::EC2::SecurityGroupEgress'
+    Properties:
+      GroupId: !Ref sgWebELB
+      IpProtocol: '-1'
+      CidrIp: 0.0.0.0/0
+Outputs:
+  WebsiteURL:
+    Description: URL for newly created LAMP stack
+    Value: !Join 
+      - ''
+      - - 'http://'
+        - !GetAtt 
+          - elbWebELB
+          - DNSName
